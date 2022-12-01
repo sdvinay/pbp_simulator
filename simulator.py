@@ -145,8 +145,9 @@ def sim_games(num_games: int, g: GameState = GameState()):
     plays = pd.concat(p).set_index(['play_id', 'game_id'])
     summaries = pd.concat(s).reset_index().rename(columns={'inning_half_bottom':'home'}).set_index(['game_id', 'home'])
 
-    event_cols=['1B', '2B', '3B', 'BB', 'HR', 'K']
+    event_cols=['1B', '2B', '3B', 'BB', 'HR', 'K', 'HBP']
     for col in event_cols:
         summaries[col] = summaries[col].fillna(0).astype(int)
+    cols = event_cols + ['R', 'RA', 'W', 'L']
 
-    return (plays, summaries)
+    return (plays, summaries[cols])
