@@ -41,10 +41,8 @@ def add_out(g: GameState) -> GameState:
     if g.outs < 2:
         return dataclasses.replace(g, outs=g.outs+1)
     else:
-        if g.inning_half_bottom:
-            return dataclasses.replace(g, outs=0, bases=[], inning_num=g.inning_num+1, inning_half_bottom=False)
-        else:
-            return dataclasses.replace(g, outs=0, bases=[], inning_half_bottom=True)
+        inning_num = g.inning_num + int(g.inning_half_bottom)
+        return dataclasses.replace(g, outs=0, bases=[], inning_num=inning_num, inning_half_bottom=(not g.inning_half_bottom))
 
 
 def add_runs(g: GameState, runs: int = 1) -> GameState:
