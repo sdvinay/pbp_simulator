@@ -53,7 +53,7 @@ def add_runs(g: GameState, runs: int = 1) -> GameState:
 
 
 def get_event_dist():
-    return {'1B': 8, '2B': 2, '3B': 1, 'HR': 1, 'K': 27, 'BB': 4}
+    return {'1B': 5.33, '2B': 1.63, '3B': 0.13, 'HR': 1.07, 'K': 8.40, 'BB': 3.06, 'HBP': .42, 'Out': 33.63-8.16-8.40}
 
 
 def select_event(event_dist):
@@ -83,9 +83,9 @@ def force_runners(g: GameState) -> GameState:
 advance = {ev: bases for bases, ev in enumerate(['1B', '2B', '3B', 'HR'], 1)}
 def apply_event_to_GS(g: GameState, ev) -> GameState:
     match ev:
-        case 'K':
+        case 'K' | 'Out':
             return add_out(g)
-        case 'BB':
+        case 'BB' | 'HBP':
             return force_runners(g)
         case '1B' | '2B' | '3B' | 'HR':
             return advance_runners(g, advance[ev])
