@@ -116,10 +116,9 @@ def summarize_game(results, game_id: int = 0):
     plays = pd.json_normalize([ process_row(i, g, e) for (i, (g, e)) in enumerate(results)])
     plays['game_id'] = game_id
     summary = plays.groupby(['inning_half_bottom'])['event'].value_counts().unstack().fillna(0).astype(int)
-    summary['R']= pd.Series({False: results[-1][0].score_t1,
-                            True: results[-1][0].score_t2})
-    summary['RA']= pd.Series({True: results[-1][0].score_t1,
-                            False: results[-1][0].score_t2})
+    final = results[-1][0]
+    summary['R']= pd.Series({False: final.score_t1, True: final.score_t2})
+    summary['RA']= pd.Series({True: final.score_t1, False: final.score_t2})
     summary['W'] = summary['R'] > summary['RA']
     summary['L'] = summary['RA'] > summary['R']
     summary['game_id'] = game_id
