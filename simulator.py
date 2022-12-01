@@ -93,9 +93,8 @@ def apply_event_to_GS(g: GameState, ev) -> GameState:
             raise KeyError(f'Unknown event "{ev}"')
 
 
-def sim_game():
+def sim_game(g: GameState = GameState()):
     # initial state
-    g = GameState()
     event_dist = get_event_dist()
 
     game_states = []
