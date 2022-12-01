@@ -80,20 +80,15 @@ def force_runners(g: GameState) -> GameState:
     return dataclasses.replace(g, bases=b)
 
 
+advance = {ev: bases for bases, ev in enumerate(['1B', '2B', '3B', 'HR'], 1)}
 def apply_event_to_GS(g: GameState, ev) -> GameState:
     match ev:
         case 'K':
             return add_out(g)
         case 'BB':
             return force_runners(g)
-        case '1B':
-            return advance_runners(g, 1)
-        case '2B':
-            return advance_runners(g, 2)
-        case '3B':
-            return advance_runners(g, 3)
-        case 'HR':
-            return advance_runners(g, 4)
+        case '1B' | '2B' | '3B' | 'HR':
+            return advance_runners(g, advance[ev])
         case _:
             raise KeyError(f'Unknown event "{ev}"')
 
