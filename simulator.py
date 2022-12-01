@@ -126,8 +126,8 @@ def summarize_game(results, game_id: int = 0):
     return (plays, summary)
 
 
-def sim_games(num_games: int):
-    results = [summarize_game(sim_game(), i) for i in range(num_games)]
+def sim_games(num_games: int, g: GameState = GameState()):
+    results = [summarize_game(sim_game(g), i) for i in range(num_games)]
 
     p, s = zip(*results)
     plays = pd.concat(p).set_index(['play_id', 'game_id'])
