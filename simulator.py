@@ -25,12 +25,15 @@ class GameState:
     inning_half_bottom: bool = False
     outs: int = 0
     bases: list[int] = dataclasses.field(default_factory=lambda : [])
+    batter_t1: int = 0
+    batter_t2: int = 0
 
     def __str__(self) -> str:
         score = f'{self.score_t1}-{self.score_t2}'
         inn = f'{"b" if self.inning_half_bottom else "t"}{self.inning_num}'
         bases = "".join([str(b) if b in self.bases else "-" for b in (1, 2, 3)])
-        return f'{score} {inn} {self.outs}o {bases}'
+        batter = self.batter_t2 if self.inning_half_bottom else self.batter_t1
+        return f'{score} {inn}({batter+1}) {self.outs}o {bases}'
 
 
 def is_game_over(g: GameState) -> bool:
@@ -38,11 +41,12 @@ def is_game_over(g: GameState) -> bool:
 
 
 def add_out(g: GameState) -> GameState:
-    if g.outs < 2:
-        return dataclasses.replace(g, outs=g.outs+1)
-    else:
-        inning_num = g.inning_num + int(g.inning_half_bottom)
-        return dataclasses.replace(g, outs=0, bases=[], inning_num=inning_num, inning_half_bottom=(not g.inning_half_bottom))
+    return dataclasses.replace(g, outs=g.outs+1)
+
+
+def advance_inning(g: GameState) -> GameState:
+    inning_num = g.inning_num + int(g.inning_half_bottom)
+    return dataclasses.replace(g, outs=0, bases=[], inning_num=inning_num, inning_half_bottom=(not g.inning_half_bottom))
 
 
 def add_runs(g: GameState, runs: int = 1) -> GameState:
@@ -51,6 +55,12 @@ def add_runs(g: GameState, runs: int = 1) -> GameState:
     else:
         return dataclasses.replace(g, score_t1=g.score_t1+runs)
 
+
+def increment_batter(g: GameState) -> GameState:
+    if g.inning_half_bottom:
+        return dataclasses.replace(g, batter_t2=(g.batter_t2+1)%9)
+    else:
+        return dataclasses.replace(g, batter_t1=(g.batter_t1+1)%9)
 
 def get_event_dist():
     return {'1B': 5.33, '2B': 1.63, '3B': 0.13, 'HR': 1.07, 'K': 8.40, 'BB': 3.06, 'HBP': .42, 'Out': 33.63-8.16-8.40}
@@ -102,6 +112,9 @@ def sim_game(g: GameState = GameState()):
         event = select_event(event_dist)
         game_states.append((g, event))
         g = apply_event_to_GS(g, event)
+        g = increment_batter(g)
+        if g.outs>=3:
+            g = advance_inning(g)
 
     game_states.append((g, None))
     return game_states
