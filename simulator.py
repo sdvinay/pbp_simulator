@@ -38,11 +38,12 @@ def is_game_over(g: GameState) -> bool:
 
 
 def add_out(g: GameState) -> GameState:
-    if g.outs < 2:
-        return dataclasses.replace(g, outs=g.outs+1)
-    else:
-        inning_num = g.inning_num + int(g.inning_half_bottom)
-        return dataclasses.replace(g, outs=0, bases=[], inning_num=inning_num, inning_half_bottom=(not g.inning_half_bottom))
+    return dataclasses.replace(g, outs=g.outs+1)
+
+
+def advance_inning(g: GameState) -> GameState:
+    inning_num = g.inning_num + int(g.inning_half_bottom)
+    return dataclasses.replace(g, outs=0, bases=[], inning_num=inning_num, inning_half_bottom=(not g.inning_half_bottom))
 
 
 def add_runs(g: GameState, runs: int = 1) -> GameState:
@@ -102,6 +103,8 @@ def sim_game(g: GameState = GameState()):
         event = select_event(event_dist)
         game_states.append((g, event))
         g = apply_event_to_GS(g, event)
+        if g.outs>=3:
+            g = advance_inning(g)
 
     game_states.append((g, None))
     return game_states
