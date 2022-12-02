@@ -18,6 +18,8 @@ import random
 import pandas as pd
 import numpy as np
 
+import lineups
+
 @dataclass
 class GameState:
     score_t1: int = 0
@@ -67,7 +69,7 @@ def increment_batter(g: GameState) -> GameState:
         return dataclasses.replace(g, batter_t1=(g.batter_t1+1)%9)
 
 def get_event_dist(g: GameState) -> dict:
-    return {'1B': 5.33, '2B': 1.63, '3B': 0.13, 'HR': 1.07, 'K': 8.40, 'BB': 3.06, 'HBP': .42, 'Out': 33.63-8.16-8.40}
+    return lineups.get_event_dist(g.get_current_batter())
 
 
 def select_event(event_dist):
