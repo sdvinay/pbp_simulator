@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import dataclasses
 import random
 import pandas as pd
+import numpy as np
 
 @dataclass
 class GameState:
@@ -128,6 +129,8 @@ def summarize_game(results, game_id: int = 0):
         return d
     plays = pd.json_normalize([ process_row(i, g, e) for (i, (g, e)) in enumerate(results)])
     plays['game_id'] = game_id
+    plays['batter_id'] = np.where(plays['inning_half_bottom'], plays['batter_t2'], plays['batter_t1'])
+
     summary = plays.groupby(['inning_half_bottom'])['event'].value_counts().unstack().fillna(0).astype(int)
     final = results[-1][0]
     summary['R']= pd.Series({False: final.score_t1, True: final.score_t2})
