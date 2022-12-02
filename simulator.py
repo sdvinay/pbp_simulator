@@ -29,11 +29,14 @@ class GameState:
     batter_t1: int = 0
     batter_t2: int = 0
 
+    def get_current_batter(self):
+        return self.batter_t2 if self.inning_half_bottom else self.batter_t1
+
     def __str__(self) -> str:
         score = f'{self.score_t1}-{self.score_t2}'
         inn = f'{"b" if self.inning_half_bottom else "t"}{self.inning_num}'
         bases = "".join([str(b) if b in self.bases else "-" for b in (1, 2, 3)])
-        batter = self.batter_t2 if self.inning_half_bottom else self.batter_t1
+        batter = self.get_current_batter()
         return f'{score} {inn}({batter+1}) {self.outs}o {bases}'
 
 
@@ -63,7 +66,7 @@ def increment_batter(g: GameState) -> GameState:
     else:
         return dataclasses.replace(g, batter_t1=(g.batter_t1+1)%9)
 
-def get_event_dist():
+def get_event_dist(g: GameState) -> dict:
     return {'1B': 5.33, '2B': 1.63, '3B': 0.13, 'HR': 1.07, 'K': 8.40, 'BB': 3.06, 'HBP': .42, 'Out': 33.63-8.16-8.40}
 
 
@@ -105,11 +108,9 @@ def apply_event_to_GS(g: GameState, ev) -> GameState:
 
 
 def sim_game(g: GameState = GameState()):
-    # initial state
-    event_dist = get_event_dist()
-
     game_states = []
     while not is_game_over(g):
+        event_dist = get_event_dist(g)
         event = select_event(event_dist)
         game_states.append((g, event))
         g = apply_event_to_GS(g, event)
