@@ -25,8 +25,7 @@ import lineups
 
 @dataclass
 class GameState:
-    score_t1: int = 0
-    score_t2: int = 0
+    scores: tuple[int] = dataclasses.field(default_factory=lambda: (0, 0))
     inning_num: int = 1
     inning_half_bottom: bool = False
     outs: int = 0
@@ -38,7 +37,7 @@ class GameState:
         return self.batter_t2 if self.inning_half_bottom else self.batter_t1
 
     def __str__(self) -> str:
-        score = f'{self.score_t1}-{self.score_t2}'
+        score = f'{self.scores[0]}-{self.scores[1]}'
         inn = f'{"b" if self.inning_half_bottom else "t"}{self.inning_num}'
         bases = "".join([str(b) if b in self.bases else "-" for b in (1, 2, 3)])
         batter = self.get_current_batter()
@@ -84,9 +83,9 @@ def advance_inning(g: GameState) -> GameState:
 
 def add_runs(g: GameState, runs: int = 1) -> GameState:
     if g.inning_half_bottom:
-        return dataclasses.replace(g, score_t2=g.score_t2+runs)
+        return dataclasses.replace(g, scores=(g.scores[0], g.scores[1]+runs))
     else:
-        return dataclasses.replace(g, score_t1=g.score_t1+runs)
+        return dataclasses.replace(g, scores=(g.scores[0]+runs, g.scores[1]))
 
 
 def increment_batter(g: GameState) -> GameState:
@@ -164,8 +163,8 @@ def summarize_game(results: List[Tuple[GameState, EventType]], game_id: int = 0)
 
     summary = plays.groupby(['inning_half_bottom'])['event'].value_counts().unstack().fillna(0).astype(int)
     final = results[-1][0]
-    summary['R']= pd.Series({False: final.score_t1, True: final.score_t2})
-    summary['RA']= pd.Series({True: final.score_t1, False: final.score_t2})
+    summary['R']= pd.Series({False: final.scores[0], True: final.scores[1]})
+    summary['RA']= pd.Series({True: final.scores[0], False: final.scores[1]})
     summary['W'] = summary['R'] > summary['RA']
     summary['L'] = summary['RA'] > summary['R']
     summary['game_id'] = game_id
