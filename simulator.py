@@ -12,11 +12,14 @@
 
 # All of these can start out simply and evolve.  E.g. start with a single inning, and only two events (K and HR) and static probabilities, and simple rules for ending the game.
 
+from typing import List, Tuple
+from enum import Enum, IntEnum
 from dataclasses import dataclass
 import dataclasses
 import random
 import pandas as pd
 import numpy as np
+
 
 import lineups
 
@@ -41,6 +44,30 @@ class GameState:
         batter = self.get_current_batter()
         return f'{score} {inn}({batter+1}) {self.outs}o {bases}'
 
+
+class EventType(IntEnum):
+    OUT = 2
+    K = 3
+    BB = 14
+    HBP = 16
+    ROE = 18
+    FC = 19
+    S = 20
+    D = 21
+    T = 22
+    HR = 23
+
+event_mapper = {
+    '1B' : EventType.S,
+    '2B' : EventType.D,
+    '3B' : EventType.T,
+    'HR' : EventType.HR,
+    'BB' : EventType.BB,
+    'SO' : EventType.K,
+    'K' : EventType.K,
+    'Out' : EventType.OUT,
+    'HBP' : EventType.HBP,
+}
 
 def is_game_over(g: GameState) -> bool:
     return g.inning_num>9
@@ -72,8 +99,9 @@ def get_event_dist(g: GameState) -> dict:
     return lineups.get_event_dist(g.get_current_batter())
 
 
-def select_event(event_dist):
-    return random.choices(list(event_dist.keys()), weights=event_dist.values(), k=1)[0]
+def select_event(event_dist: dict) -> EventType:
+    choice = random.choices(list(event_dist.keys()), weights=event_dist.values(), k=1)[0]
+    return event_mapper.get(choice, choice)
 
 
 def advance_runners(g: GameState, num: int = 1) -> GameState:
@@ -96,20 +124,20 @@ def force_runners(g: GameState) -> GameState:
     return dataclasses.replace(g, bases=b)
 
 
-advance = {ev: bases for bases, ev in enumerate(['1B', '2B', '3B', 'HR'], 1)}
-def apply_event_to_GS(g: GameState, ev) -> GameState:
+advance = {ev: bases for bases, ev in enumerate([EventType.S, EventType.D, EventType.T, EventType.HR], 1)}
+def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
     match ev:
-        case 'K' | 'Out':
+        case EventType.K | EventType.OUT:
             return add_out(g)
-        case 'BB' | 'HBP':
+        case EventType.BB | EventType.HBP:
             return force_runners(g)
-        case '1B' | '2B' | '3B' | 'HR':
+        case EventType.S | EventType.D | EventType.T | EventType.HR:
             return advance_runners(g, advance[ev])
         case _:
             raise KeyError(f'Unknown event "{ev}"')
 
 
-def sim_game(g: GameState = GameState()):
+def sim_game(g: GameState = GameState()) -> List[Tuple[GameState, EventType]]:
     game_states = []
     while not is_game_over(g):
         event_dist = get_event_dist(g)
@@ -124,10 +152,10 @@ def sim_game(g: GameState = GameState()):
     return game_states
 
 
-def summarize_game(results, game_id: int = 0):
+def summarize_game(results: List[Tuple[GameState, EventType]], game_id: int = 0):
     def process_row(play_id, g, e):
         d = dataclasses.asdict(g)
-        d['event'] = e
+        d['event'] = EventType(e).name if e else e
         d['play_id'] = play_id
         return d
     plays = pd.json_normalize([ process_row(i, g, e) for (i, (g, e)) in enumerate(results)])
@@ -150,8 +178,7 @@ def sim_games(num_games: int, g: GameState = GameState()):
     p, s = zip(*results)
     plays = pd.concat(p).set_index(['play_id', 'game_id'])
     summaries = pd.concat(s).reset_index().rename(columns={'inning_half_bottom':'home'}).set_index(['game_id', 'home'])
-
-    event_cols=['1B', '2B', '3B', 'BB', 'HR', 'K', 'HBP']
+    event_cols = [ev.name for ev in EventType if ev.name in summaries.columns]
     for col in event_cols:
         summaries[col] = summaries[col].fillna(0).astype(int)
     cols = event_cols + ['R', 'RA', 'W', 'L']
