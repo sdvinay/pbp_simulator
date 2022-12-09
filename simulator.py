@@ -82,10 +82,8 @@ def advance_inning(g: GameState) -> GameState:
 
 
 def add_runs(g: GameState, runs: int = 1) -> GameState:
-    if g.inning_half_bottom:
-        return dataclasses.replace(g, scores=(g.scores[0], g.scores[1]+runs))
-    else:
-        return dataclasses.replace(g, scores=(g.scores[0]+runs, g.scores[1]))
+    new_score = (g.scores[0], g.scores[1]+runs) if g.inning_half_bottom else (g.scores[0]+runs, g.scores[1])
+    return dataclasses.replace(g, scores=new_score)
 
 
 def increment_batter(g: GameState) -> GameState:
