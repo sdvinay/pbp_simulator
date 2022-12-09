@@ -105,24 +105,6 @@ def select_event(event_dist: dict) -> EventType:
     return event_mapper.get(choice, choice)
 
 
-def advance_runners(g: GameState, num: int = 1) -> GameState:
-    bases_new = [b+num for b in [0]+g.bases if b+num <=3]
-    num_runs = sum([b+num >3 for b in [0]+g.bases])
-    g = add_runs(g, num_runs)
-    g = dataclasses.replace(g, bases=bases_new)
-    return g
-
-
-def force_runners(g: GameState) -> GameState:
-    if len(g.bases)==3:
-        return add_runs(g, 1)
-    b = [1]
-    match g.bases:
-        case [1] | [2]: b = [1, 2]
-        case [3]: b = [1, 3]
-        case [_, _]: b= [1, 2, 3]
-
-    return dataclasses.replace(g, bases=b)
 
 def get_outcome_from_event(g: GameState, ev: EventType):
     outcome = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
@@ -139,12 +121,7 @@ def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
             g = add_runs(g, event_runs_ct)
         bases = {0: [], 1: [1], 2: [2], 3: [1,2], 4: [3], 5: [1,3], 6: [2,3], 7: [1,2,3]}[end_bases_cd]
         return dataclasses.replace(g, bases=bases)
-    match ev:
-        case EventType.K:
-            return add_out(g)
-        case EventType.BB | EventType.HBP:
-            return force_runners(g)
-        case _:
+    else:
             raise KeyError(f'Unknown event "{ev}"')
 
 
