@@ -60,14 +60,9 @@ def select_event(event_dist: dict) -> EventType:
     return event_mapper.get(choice, choice)
 
 
-
-def get_outcome_from_event(g: GameState, ev: EventType):
-    outcome = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
-    return outcome
-
 advance = {ev: bases for bases, ev in enumerate([EventType.S, EventType.D, EventType.T, EventType.HR], 1)}
 def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
-    outcome = get_outcome_from_event(g, ev)
+    outcome = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
     if outcome:
         (event_outs_ct, event_runs_ct, end_bases_cd) = outcome
         if event_outs_ct > 0: # for now just apply one out, rather than checking for three
