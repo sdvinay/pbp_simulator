@@ -47,3 +47,7 @@ def increment_batter(g: GameState) -> GameState:
         return dataclasses.replace(g, batter_t2=(g.batter_t2+1)%9)
     else:
         return dataclasses.replace(g, batter_t1=(g.batter_t1+1)%9)
+
+def get_bases_list_from_cd(cd: int):
+    mapping = {0: [], 1: [1], 2: [2], 3: [1,2], 4: [3], 5: [1,3], 6: [2,3], 7: [1,2,3]}
+    return mapping.get(cd)

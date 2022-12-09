@@ -69,7 +69,7 @@ def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
             g = gs.add_out(g)
         if event_runs_ct > 0:
             g = gs.add_runs(g, event_runs_ct)
-        bases = {0: [], 1: [1], 2: [2], 3: [1,2], 4: [3], 5: [1,3], 6: [2,3], 7: [1,2,3]}[end_bases_cd]
+        bases = gs.get_bases_list_from_cd(end_bases_cd)
         return dataclasses.replace(g, bases=bases)
     else:
             raise KeyError(f'Unknown event "{ev}"')
