@@ -22,6 +22,7 @@ import numpy as np
 
 
 import lineups
+import event_transitions
 
 @dataclass
 class GameState:
@@ -42,6 +43,9 @@ class GameState:
         bases = "".join([str(b) if b in self.bases else "-" for b in (1, 2, 3)])
         batter = self.get_current_batter()
         return f'{score} {inn}({batter+1}) {self.outs}o {bases}'
+
+    def get_bases_as_num(self):
+        return sum(2**(b-1) for b in self.bases)
 
 
 class EventType(IntEnum):
@@ -120,16 +124,26 @@ def force_runners(g: GameState) -> GameState:
 
     return dataclasses.replace(g, bases=b)
 
+def get_outcome_from_event(g: GameState, ev: EventType):
+    outcome = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
+    return outcome
 
 advance = {ev: bases for bases, ev in enumerate([EventType.S, EventType.D, EventType.T, EventType.HR], 1)}
 def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
+    outcome = get_outcome_from_event(g, ev)
+    if outcome:
+        (event_outs_ct, event_runs_ct, end_bases_cd) = outcome
+        if event_outs_ct > 0: # for now just apply one out, rather than checking for three
+            g = add_out(g)
+        if event_runs_ct > 0:
+            g = add_runs(g, event_runs_ct)
+        bases = {0: [], 1: [1], 2: [2], 3: [1,2], 4: [3], 5: [1,3], 6: [2,3], 7: [1,2,3]}[end_bases_cd]
+        return dataclasses.replace(g, bases=bases)
     match ev:
-        case EventType.K | EventType.OUT:
+        case EventType.K:
             return add_out(g)
         case EventType.BB | EventType.HBP:
             return force_runners(g)
-        case EventType.S | EventType.D | EventType.T | EventType.HR:
-            return advance_runners(g, advance[ev])
         case _:
             raise KeyError(f'Unknown event "{ev}"')
 
