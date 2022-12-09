@@ -64,15 +64,18 @@ advance = {ev: bases for bases, ev in enumerate([EventType.S, EventType.D, Event
 def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
     outcome = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
     if outcome:
-        (event_outs_ct, event_runs_ct, end_bases_cd) = outcome
-        if event_outs_ct > 0: # for now just apply one out, rather than checking for three
-            g = gs.add_out(g)
-        if event_runs_ct > 0:
-            g = gs.add_runs(g, event_runs_ct)
-        bases = gs.get_bases_list_from_cd(end_bases_cd)
-        return dataclasses.replace(g, bases=bases)
+        end_bases = []
+        for b, dest in enumerate(outcome):
+            if b in [0] + g.bases:
+                if dest == 0:
+                    g = gs.add_out(g)
+                elif dest == 4:
+                    g = gs.add_runs(g, 1)
+                else:
+                    end_bases.append(dest)
+        return dataclasses.replace(g, bases=end_bases)
     else:
-            raise KeyError(f'Unknown event "{ev}"')
+            raise KeyError((ev, g))
 
 
 def sim_game(g: GameState = GameState()) -> List[Tuple[GameState, EventType]]:
