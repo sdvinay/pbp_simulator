@@ -1,3 +1,4 @@
+from typing import List
 from dataclasses import dataclass
 import dataclasses
 
@@ -51,3 +52,16 @@ def increment_batter(g: GameState) -> GameState:
 def get_bases_list_from_cd(cd: int):
     mapping = {0: [], 1: [1], 2: [2], 3: [1,2], 4: [3], 5: [1,3], 6: [2,3], 7: [1,2,3]}
     return mapping.get(cd)
+
+
+def apply_transitions_to_GS(g: GameState, transitions: List) -> GameState:
+    end_bases = []
+    for b, dest in enumerate(transitions):
+        if b in [0] + g.bases:
+            if dest == 0:
+                g = add_out(g)
+            elif dest == 4:
+                g = add_runs(g, 1)
+            else:
+                end_bases.append(dest)
+    return dataclasses.replace(g, bases=end_bases)

@@ -59,47 +59,34 @@ def select_event(event_dist: dict) -> EventType:
     choice = random.choices(list(event_dist.keys()), weights=event_dist.values(), k=1)[0]
     return event_mapper.get(choice, choice)
 
-
-advance = {ev: bases for bases, ev in enumerate([EventType.S, EventType.D, EventType.T, EventType.HR], 1)}
-def apply_event_to_GS(g: GameState, ev: EventType) -> GameState:
-    outcome = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
-    if outcome:
-        end_bases = []
-        for b, dest in enumerate(outcome):
-            if b in [0] + g.bases:
-                if dest == 0:
-                    g = gs.add_out(g)
-                elif dest == 4:
-                    g = gs.add_runs(g, 1)
-                else:
-                    end_bases.append(dest)
-        return dataclasses.replace(g, bases=end_bases)
-    else:
-            raise KeyError((ev, g))
-
+def get_transition_from_event(g: GameState, ev: EventType):
+    transitions = event_transitions.event_transition_map.get((ev, g.get_bases_as_num(), g.outs))
+    return transitions
 
 def sim_game(g: GameState = GameState()) -> List[Tuple[GameState, EventType]]:
     game_states = []
     while not gs.is_game_over(g):
         event_dist = get_event_dist(g)
         event = select_event(event_dist)
-        game_states.append((g, event))
-        g = apply_event_to_GS(g, event)
+        transitions = get_transition_from_event(g, event)
+        game_states.append((g, event, transitions))
+        g = gs.apply_transitions_to_GS(g, transitions)
         g = gs.increment_batter(g)
         if g.outs>=3:
             g = gs.advance_inning(g)
 
-    game_states.append((g, None))
+    game_states.append((g, None, None))
     return game_states
 
 
 def summarize_game(results: List[Tuple[GameState, EventType]], game_id: int = 0):
-    def process_row(play_id, g, e):
+    def process_row(play_id, g, e, t):
         d = dataclasses.asdict(g)
         d['event'] = EventType(e).name if e else e
+        d['transition'] = t
         d['play_id'] = play_id
         return d
-    plays = pd.json_normalize([ process_row(i, g, e) for (i, (g, e)) in enumerate(results)])
+    plays = pd.DataFrame([ process_row(i, g, e, t) for (i, (g, e, t)) in enumerate(results)])
     plays['game_id'] = game_id
     plays['batter_id'] = np.where(plays['inning_half_bottom'], plays['batter_t2'], plays['batter_t1'])
 
